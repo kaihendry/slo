@@ -11,7 +11,8 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+ARG TARGET_ARCH=amd64
+RUN echo Building for ${TARGET_ARCH} && CGO_ENABLED=0 GOOS=linux GOARCH=${TARGET_ARCH} go build
 
 FROM scratch
 ENV PORT 9000
