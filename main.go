@@ -51,7 +51,7 @@ func main() {
 				w.WriteHeader(code)
 			}
 		}
-		fmt.Fprintln(w, fmt.Sprintf("Slept: %d ms..yawn", sleep))
+		fmt.Fprintln(w, fmt.Sprintf("Slept: %d ms", sleep))
 	})
 
 	// Register all of the metrics in the standard registry.
@@ -67,7 +67,7 @@ func main() {
 	http.Handle("/", rootChain)
 
 	address := ":" + os.Getenv("PORT")
-	log.Println("slake on " + address)
+	log.Println("sla on port " + address)
 	if err := http.ListenAndServe(address, nil); err != nil {
 		log.Fatal(err)
 	}
