@@ -9,15 +9,9 @@ arm:
 	docker push alexellis2/hendry:$@
 
 manifest: amd64 arm
-	docker manifest create --amend alexellis2/hendry:$(Version) \
-	  alexellis2/hendry:amd64 \
-	  alexellis2/hendry:arm
+	docker manifest create --amend alexellis2/hendry:$(Version) alexellis2/hendry:amd64 alexellis2/hendry:arm
 
-	docker manifest annotate alexellis2/hendry:$(Version) \
-	  alexellis2/hendry:amd64 --os linux --arch amd64
-
-	docker manifest annotate alexellis2/hendry:$(Version) \
-	  alexellis2/hendry:arm --os linux --arch arm --variant v6
+	docker manifest annotate alexellis2/hendry:$(Version) alexellis2/hendry:arm --os linux --arch arm --variant v6
 	
 	docker manifest inspect alexellis2/hendry:$(Version)
 	docker manifest push alexellis2/hendry:$(Version)
