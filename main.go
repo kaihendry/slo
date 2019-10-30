@@ -5,12 +5,44 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	Version   string
+	Revision  string
+	Branch    string
+	BuildUser string
+	BuildDate string
+	GoVersion = runtime.Version()
+)
+
+// Map provides the iterable version information.
+var Map = map[string]string{
+	"version":   Version,
+	"revision":  Revision,
+	"branch":    Branch,
+	"buildUser": BuildUser,
+	"buildDate": BuildDate,
+	"goVersion": GoVersion,
+}
+
+func init() {
+	buildInfo := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "sla_build_info",
+			Help: "A metric with a constant '1' value labeled by version, revision, branch, and goversion from which sla was built.",
+		},
+		[]string{"version", "revision", "branch", "goversion"},
+	)
+	buildInfo.WithLabelValues(Version, Revision, Branch, GoVersion).Set(1)
+	prometheus.MustRegister(buildInfo)
+}
 
 func main() {
 
