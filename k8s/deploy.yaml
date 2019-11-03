@@ -1,0 +1,33 @@
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "sla"
+  namespace: "default"
+  labels:
+    app: "sla"
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "sla"
+  template:
+    metadata:
+      labels:
+        app: "sla"
+    spec:
+      containers:
+        - name: "sla-sha256"
+          image: "hendry/sla"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sla
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 9000
+  selector:
+    app: sla
