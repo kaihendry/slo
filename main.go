@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -44,6 +46,23 @@ func init() {
 	prometheus.MustRegister(buildInfo)
 }
 
+// Create the handlers that will be wrapped by the middleware.
+func root(w http.ResponseWriter, r *http.Request) {
+	sleep, err := strconv.Atoi(r.URL.Query().Get("sleep"))
+	if err == nil {
+		log.Println(fmt.Sprintf("Sleeping: %d milliseconds", sleep))
+		time.Sleep(time.Duration(sleep) * time.Millisecond)
+	}
+	code, err := strconv.Atoi(r.URL.Query().Get("code"))
+	if err == nil {
+		if code >= 200 {
+			log.Println(fmt.Sprintf("Code: %d", code))
+			w.WriteHeader(code)
+		}
+	}
+	fmt.Fprintln(w, fmt.Sprintf("Slept: %d ms", sleep))
+}
+
 func main() {
 
 	inFlightGauge := prometheus.NewGauge(prometheus.GaugeOpts{
@@ -69,38 +88,28 @@ func main() {
 		[]string{"handler", "method"},
 	)
 
-	// Create the handlers that will be wrapped by the middleware.
-	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sleep, err := strconv.Atoi(r.URL.Query().Get("sleep"))
-		if err == nil {
-			log.Println(fmt.Sprintf("Sleeping: %d milliseconds", sleep))
-			time.Sleep(time.Duration(sleep) * time.Millisecond)
-		}
-		code, err := strconv.Atoi(r.URL.Query().Get("code"))
-		if err == nil {
-			if code >= 200 {
-				log.Println(fmt.Sprintf("Code: %d", code))
-				w.WriteHeader(code)
-			}
-		}
-		fmt.Fprintln(w, fmt.Sprintf("Slept: %d ms", sleep))
-	})
-
 	// Register all of the metrics in the standard registry.
 	prometheus.MustRegister(inFlightGauge, counter, duration)
 
-	// Instrument the handlers with all the metrics, injecting the "handler" label by currying.
-	rootChain := promhttp.InstrumentHandlerInFlight(inFlightGauge,
-		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "/"}),
-			promhttp.InstrumentHandlerCounter(counter, rootHandler),
-		),
-	)
-	http.Handle("/metrics", promhttp.Handler())
-	http.Handle("/", rootChain)
+	// Pprof server.
+	// https://mmcloughlin.com/posts/your-pprof-is-showing
+	go func() {
+		plisten := "localhost:8081"
+		log.Println("Running pprof on " + plisten)
+		log.Fatal(http.ListenAndServe(plisten, nil))
+	}()
 
-	address := ":" + os.Getenv("PORT")
-	log.Println("sla on port " + address)
-	if err := http.ListenAndServe(address, nil); err != nil {
+	// Application server.
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	// Injecting the "handler" label by currying.
+	mux.Handle("/", promhttp.InstrumentHandlerInFlight(inFlightGauge,
+		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "/"}),
+			promhttp.InstrumentHandlerCounter(counter, http.HandlerFunc(root)),
+		),
+	))
+
+	if err := http.ListenAndServe(":"+os.Getenv("PORT"), mux); err != nil {
 		log.Fatal(err)
 	}
 
