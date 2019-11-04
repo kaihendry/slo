@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"runtime"
 	"strconv"
 	"time"
@@ -94,9 +93,7 @@ func main() {
 	// Pprof server.
 	// https://mmcloughlin.com/posts/your-pprof-is-showing
 	go func() {
-		plisten := "localhost:8081"
-		log.Println("Running pprof on " + plisten)
-		log.Fatal(http.ListenAndServe(plisten, nil))
+		log.Fatal(http.ListenAndServe(":8081", nil))
 	}()
 
 	// Application server.
@@ -109,8 +106,7 @@ func main() {
 		),
 	))
 
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), mux); err != nil {
+	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
 	}
-
 }

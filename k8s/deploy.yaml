@@ -28,6 +28,6 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-    - port: 9000
+    - port: 8080
   selector:
     app: sla
