@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: "sla-sha256"
-          image: "hendry/sla:12ed6dd"
+          image: "hendry/sla:dbfd800"
           ports:
             - name: web
               containerPort: 8080

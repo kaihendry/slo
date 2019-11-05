@@ -101,9 +101,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	// Injecting the "handler" label by currying.
-	promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "/"}),
+	mux.Handle("/", promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "/"}),
 		promhttp.InstrumentHandlerCounter(counter, http.HandlerFunc(root)),
-	)
+	))
 
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
