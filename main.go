@@ -66,7 +66,7 @@ func main() {
 
 	// duration is partitioned by the HTTP method and handler. It uses custom
 	// buckets based on the expected request duration.
-	//
+	// https://prometheus.io/docs/practices/histograms/
 	// sum(rate(http_request_duration_seconds_bucket{le="0.3"}[5m])) by (job)
 	// /
 	// sum(rate(http_request_duration_seconds_count[5m])) by (job)
