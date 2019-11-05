@@ -64,31 +64,32 @@ func root(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	inFlightGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "in_flight_requests",
-		Help: "A gauge of requests currently being served by the wrapped handler.",
-	})
-
 	counter := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "api_requests_total",
+			Name: "http_request_duration_seconds_count",
 			Help: "A counter for requests to the wrapped handler.",
 		}, []string{"code", "method"},
 	)
 
 	// duration is partitioned by the HTTP method and handler. It uses custom
 	// buckets based on the expected request duration.
+	//
+	// sum(rate(http_request_duration_seconds_bucket{le="0.3"}[5m])) by (job)
+	// /
+	// sum(rate(http_request_duration_seconds_count[5m])) by (job)
+
 	duration := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "request_duration_seconds",
-			Help:    "A histogram of latencies for requests.",
+			Name: "http_request_duration_seconds",
+			Help: "A histogram of latencies for requests.",
+			// 50ms, 100ms, 200ms, 300ms, 500ms
 			Buckets: []float64{.05, .1, .2, .3, .5},
 		},
 		[]string{"handler", "method"},
 	)
 
 	// Register all of the metrics in the standard registry.
-	prometheus.MustRegister(inFlightGauge, counter, duration)
+	prometheus.MustRegister(counter, duration)
 
 	// Pprof server.
 	// https://mmcloughlin.com/posts/your-pprof-is-showing
@@ -100,11 +101,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	// Injecting the "handler" label by currying.
-	mux.Handle("/", promhttp.InstrumentHandlerInFlight(inFlightGauge,
-		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "/"}),
-			promhttp.InstrumentHandlerCounter(counter, http.HandlerFunc(root)),
-		),
-	))
+	promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "/"}),
+		promhttp.InstrumentHandlerCounter(counter, http.HandlerFunc(root)),
+	)
 
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
