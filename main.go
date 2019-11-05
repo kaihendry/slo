@@ -64,13 +64,6 @@ func root(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	counter := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "http_request_duration_seconds_count",
-			Help: "A counter for requests to the wrapped handler.",
-		}, []string{"code", "method"},
-	)
-
 	// duration is partitioned by the HTTP method and handler. It uses custom
 	// buckets based on the expected request duration.
 	//
@@ -89,7 +82,7 @@ func main() {
 	)
 
 	// Register all of the metrics in the standard registry.
-	prometheus.MustRegister(counter, duration)
+	prometheus.MustRegister(duration)
 
 	// Pprof server.
 	// https://mmcloughlin.com/posts/your-pprof-is-showing
@@ -102,8 +95,7 @@ func main() {
 	mux.Handle("/metrics", promhttp.Handler())
 	// Injecting the "handler" label by currying.
 	mux.Handle("/", promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "/"}),
-		promhttp.InstrumentHandlerCounter(counter, http.HandlerFunc(root)),
-	))
+		http.HandlerFunc(root)))
 
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
