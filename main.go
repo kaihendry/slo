@@ -16,17 +16,16 @@ import (
 
 var (
 	Version   string
-	Revision  string
 	Branch    string
 	BuildUser string
 	BuildDate string
+	BuildHost string
 	GoVersion = runtime.Version()
 )
 
 // Map provides the iterable version information.
 var Map = map[string]string{
 	"version":   Version,
-	"revision":  Revision,
 	"branch":    Branch,
 	"buildUser": BuildUser,
 	"buildDate": BuildDate,
@@ -37,11 +36,11 @@ func init() {
 	buildInfo := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sla_build_info",
-			Help: "A metric with a constant '1' value labeled by version, revision, branch, and goversion from which sla was built.",
+			Help: "A metric with a constant '1' value labeled by attributes from which sla was built.",
 		},
-		[]string{"version", "revision", "branch", "goversion"},
+		[]string{"version", "branch", "buildUser", "buildDate", "goversion"},
 	)
-	buildInfo.WithLabelValues(Version, Revision, Branch, GoVersion).Set(1)
+	buildInfo.WithLabelValues(Version, Branch, BuildUser, BuildDate, GoVersion).Set(1)
 	prometheus.MustRegister(buildInfo)
 }
 
