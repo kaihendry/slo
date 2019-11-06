@@ -1,9 +1,7 @@
 NAME := hendry/sla
 
-VERSION  = $(shell git describe --tags --always)
+VERSION  = $(shell git describe --tags --always --dirty)
 BRANCH   = $(shell git rev-parse --abbrev-ref HEAD)
-USER     = $(shell whoami)
-HOST     = $(shell hostname)
 DATE     = $(shell date +'%FT%T%z')
 
 manifest: options amd64 arm
@@ -24,7 +22,7 @@ amd64:
 		--build-arg BRANCH=$(BRANCH) \
 		--build-arg USER=$(USER) \
 		--build-arg BUILDDATE=$(DATE) \
-		--build-arg HOST=$(HOST)
+		--build-arg HOST=$(HOSTNAME)
 	docker push $(NAME):$@
 
 arm:
@@ -34,15 +32,13 @@ arm:
 		--build-arg BRANCH=$(BRANCH) \
 		--build-arg USER=$(USER) \
 		--build-arg BUILDDATE=$(DATE) \
-		--build-arg HOST=$(HOST)
+		--build-arg HOST=$(HOSTNAME)
 	docker push $(NAME):$@
 
 options:
 	@echo sla build options:
 	@echo "VERSION   = ${VERSION}"
 	@echo "BRANCH    = ${BRANCH}"
-	@echo "USER      = ${USER}"
-	@echo "HOST      = ${HOST}"
 	@echo "DATE      = ${DATE}"
 
 run:
