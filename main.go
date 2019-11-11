@@ -18,7 +18,6 @@ var (
 	Version   string
 	Branch    string
 	BuildUser string
-	BuildDate string
 	BuildHost string
 	GoVersion = runtime.Version()
 )
@@ -28,7 +27,6 @@ var Map = map[string]string{
 	"version":   Version,
 	"branch":    Branch,
 	"buildUser": BuildUser,
-	"buildDate": BuildDate,
 	"goVersion": GoVersion,
 }
 
@@ -38,9 +36,9 @@ func init() {
 			Name: "sla_build_info",
 			Help: "A metric with a constant '1' value labeled by attributes from which sla was built.",
 		},
-		[]string{"version", "branch", "buildUser", "buildDate", "goversion"},
+		[]string{"version", "branch", "buildUser", "goversion"},
 	)
-	buildInfo.WithLabelValues(Version, Branch, BuildUser, BuildDate, GoVersion).Set(1)
+	buildInfo.WithLabelValues(Version, Branch, BuildUser, GoVersion).Set(1)
 	prometheus.MustRegister(buildInfo)
 }
 

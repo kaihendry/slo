@@ -2,7 +2,6 @@ NAME := hendry/sla
 
 VERSION  = $(shell git describe --tags --always --dirty)
 BRANCH   = $(shell git rev-parse --abbrev-ref HEAD)
-DATE     = $(shell date +'%FT%T%z')
 HOSTNAME = $(shell hostname -s)
 
 all: $(VERSION) latest
@@ -19,7 +18,6 @@ arm amd64:
 		--build-arg VERSION=$(VERSION) \
 		--build-arg BRANCH=$(BRANCH) \
 		--build-arg USER=$(USER) \
-		--build-arg BUILDDATE=$(DATE) \
 		--build-arg HOST=$(HOSTNAME)
 	docker push $(NAME):$@
 
@@ -27,8 +25,7 @@ options:
 	@echo sla build options:
 	@echo "VERSION   = ${VERSION}"
 	@echo "BRANCH    = ${BRANCH}"
-	@echo "DATE      = ${DATE}"
 	@echo "HOSTNAME  = ${HOSTNAME}"
 
 run:
-	docker run -p 8080:8080 -p 8081:8081 $(NAME)
+	docker run --rm -p 8080:8080 -p 8081:8081 $(NAME)
