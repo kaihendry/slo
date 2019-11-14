@@ -4,5 +4,6 @@ go 1.13
 
 require (
 	github.com/prometheus/client_golang v1.2.1
-	golang.org/x/sys v0.0.0-20191029155521-f43be2a4598c // indirect
+	github.com/prometheus/procfs v0.0.6 // indirect
+	golang.org/x/sys v0.0.0-20191113165036-4c7a9d0fe056 // indirect
 )
