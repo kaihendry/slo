@@ -14,10 +14,9 @@ LABEL org.label-schema.schema-version="1.0"
 LABEL org.label-schema.version=$VERSION
 
 RUN echo Building for ${TARGET_ARCH}
+RUN go env && go version
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGET_ARCH} \
-	go build -ldflags "-X main.Version=${VERSION} \
-		-X main.Branch=${BRANCH} \
-		-X main.BuildUser=${USER}@${HOST}"
+	go build -ldflags "-X main.Version=${VERSION} -X main.Branch=${BRANCH}"
 
 FROM scratch
 COPY --from=builder /app/sla /app/
