@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"time"
@@ -83,9 +84,9 @@ func main() {
 
 	// Pprof server.
 	// https://mmcloughlin.com/posts/your-pprof-is-showing
-	go func() {
-		log.Fatal(http.ListenAndServe(":8081", nil))
-	}()
+	// go func() {
+	// 	log.Fatal(http.ListenAndServe(":8081", nil))
+	// }()
 
 	// Application server.
 	mux := http.NewServeMux()
@@ -94,7 +95,7 @@ func main() {
 	mux.Handle("/", promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "/"}),
 		http.HandlerFunc(root)))
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":"+os.Getenv("PORT"), mux); err != nil {
 		log.Fatal(err)
 	}
 }
