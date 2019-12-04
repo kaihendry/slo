@@ -18,8 +18,7 @@ RUN go env && go version
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGET_ARCH} \
 	go build -ldflags "-X main.Version=${VERSION} -X main.Branch=${BRANCH}"
 
-ENV PORT 8080
-
 FROM scratch
 COPY --from=builder /app/sla /app/
+ENV PORT 8080
 ENTRYPOINT ["/app/sla"]

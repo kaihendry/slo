@@ -19,8 +19,6 @@ import (
 var (
 	Version   string
 	Branch    string
-	BuildUser string
-	BuildHost string
 	GoVersion = runtime.Version()
 
 	inFlightGauge = promauto.NewGauge(prometheus.GaugeOpts{
@@ -34,7 +32,7 @@ var (
 	},
 		[]string{"code", "method"})
 
-	duration = prometheus.NewHistogramVec(
+	duration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name: "request_duration_seconds",
 			Help: "A histogram of latencies for requests.",
@@ -44,22 +42,14 @@ var (
 		[]string{"handler", "code", "method"},
 	)
 
-	buildInfo = prometheus.NewGaugeVec(
+	buildInfo = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sla_build_info",
 			Help: "A metric with a constant '1' value labeled by attributes from which sla was built.",
 		},
-		[]string{"version", "branch", "buildUser", "goversion"},
+		[]string{"version", "branch", "goversion"},
 	)
 )
-
-func init() {
-	prometheus.MustRegister(inFlightGauge)
-	prometheus.MustRegister(counter)
-	prometheus.MustRegister(duration)
-	prometheus.MustRegister(buildInfo)
-	buildInfo.WithLabelValues(Version, Branch, BuildUser, GoVersion).Set(1)
-}
 
 func root(w http.ResponseWriter, r *http.Request) {
 	sleep, err := strconv.Atoi(r.URL.Query().Get("sleep"))
@@ -78,6 +68,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	buildInfo.WithLabelValues(Version, Branch, GoVersion).Set(1)
 
 	// duration is partitioned by the HTTP method and handler. It uses custom
 	// buckets based on the expected request duration.
@@ -85,8 +76,6 @@ func main() {
 	// sum(rate(request_duration_seconds_bucket{le="0.3"}[5m])) by (job)
 	// /
 	// sum(rate(request_duration_seconds_count[5m])) by (job)
-
-	// Register all of the metrics in the standard registry.
 
 	// Pprof server.
 	// https://mmcloughlin.com/posts/your-pprof-is-showing
@@ -106,6 +95,7 @@ func main() {
 
 	mux.Handle("/", rootChain)
 
+	log.Println("Listening on :" + os.Getenv("PORT"))
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), mux); err != nil {
 		log.Fatal(err)
 	}
