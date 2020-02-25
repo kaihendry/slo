@@ -25,3 +25,6 @@ options:
 
 run:
 	docker run --rm -p 8080:8080 -p 8081:8081 $(NAME):amd64
+
+checkmetrics:
+	curl -s localhost:3000/metrics | docker run --entrypoint=promtool prom/prometheus check metrics

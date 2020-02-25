@@ -7,8 +7,6 @@ COPY . .
 ARG TARGET_ARCH=amd64
 ARG VERSION
 ARG BRANCH
-ARG USER
-ARG HOST
 
 LABEL org.label-schema.schema-version="1.0"
 LABEL org.label-schema.version=$VERSION
