@@ -55,9 +55,9 @@ var (
 
 func root(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
-	req := fmt.Sprintf("http://%s%s", r.Host, r.URL.String())
+	req := fmt.Sprintf("%s", r.URL.String())
+	log.Println(name, base64.StdEncoding.EncodeToString([]byte(req)))
 	if name == "" {
-		log.Println(name, base64.StdEncoding.EncodeToString([]byte(req)))
 		name = randomdata.SillyName()
 	}
 	log.Println(name, req)
@@ -71,10 +71,20 @@ func root(w http.ResponseWriter, r *http.Request) {
 
 	if string(dep) != "" {
 		log.Printf("%s fetching dependency: %s", name, string(dep))
-		res, err := http.Get(string(dep))
+		res, err := http.Get(fmt.Sprintf("http://%s%s", r.Host, string(dep)))
+
+		// OFTEN MISSING
+		statusOK := res.StatusCode >= 200 && res.StatusCode < 300
+		if !statusOK {
+			http.Error(w, "not OK response", res.StatusCode)
+			return
+		}
+		// OFTEN MISSING
+
 		if err != nil {
 			http.Error(w, err.Error(), res.StatusCode)
-			log.Fatal(err)
+			// Prom crashes here
+			return
 		}
 	}
 
