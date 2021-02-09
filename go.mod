@@ -1,10 +1,11 @@
 module github.com/kaihendry/sla
 
-go 1.13
+go 1.15
 
 require (
-	github.com/golang/protobuf v1.3.3 // indirect
-	github.com/prometheus/client_golang v1.4.1
-	github.com/prometheus/procfs v0.0.10 // indirect
-	golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae // indirect
+	github.com/Pallinder/go-randomdata v1.2.0
+	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/procfs v0.4.1 // indirect
+	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
 )

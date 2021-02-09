@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	_ "net/http/pprof"
 
+	"github.com/Pallinder/go-randomdata"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -52,9 +54,33 @@ var (
 )
 
 func root(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	req := fmt.Sprintf("http://%s%s", r.Host, r.URL.String())
+	if name == "" {
+		log.Println(name, base64.StdEncoding.EncodeToString([]byte(req)))
+		name = randomdata.SillyName()
+	}
+	log.Println(name, req)
+	start := time.Now()
+
+	dep, err := base64.StdEncoding.DecodeString(r.URL.Query().Get("dep"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Fatal(err)
+	}
+
+	if string(dep) != "" {
+		log.Printf("%s fetching dependency: %s", name, string(dep))
+		res, err := http.Get(string(dep))
+		if err != nil {
+			http.Error(w, err.Error(), res.StatusCode)
+			log.Fatal(err)
+		}
+	}
+
 	sleep, err := strconv.Atoi(r.URL.Query().Get("sleep"))
 	if err == nil {
-		log.Println(fmt.Sprintf("Sleeping: %d milliseconds", sleep))
+		// log.Println(fmt.Sprintf("%s sleeping: %d milliseconds", name, sleep))
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 	}
 	code, err := strconv.Atoi(r.URL.Query().Get("code"))
@@ -64,7 +90,9 @@ func root(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(code)
 		}
 	}
-	fmt.Fprintln(w, fmt.Sprintf("Slept: %d ms", sleep))
+	log.Printf("name %s dep %s code %d slept %d ms", name, string(dep), code, sleep)
+	t := time.Now()
+	fmt.Fprintln(w, fmt.Sprintf("Name: %s, Elapsed: %s ms, Slept: %d ms, with dep: %s", name, t.Sub(start), sleep, string(dep)))
 }
 
 func main() {
