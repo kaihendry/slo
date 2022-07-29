@@ -3,7 +3,7 @@ apiVersion: "apps/v1"
 kind: "Deployment"
 metadata:
   name: "sla"
-  namespace: "default"
+  namespace: "kai"
   labels:
     app: "sla"
 
@@ -28,6 +28,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sla
+  namespace: "kai"
 spec:
   type: LoadBalancer
   ports:
