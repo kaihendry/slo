@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: "sla-sha256"
-          image: "hendry/sla:35459a3"
+          image: 160071257600.dkr.ecr.ap-northeast-2.amazonaws.com/test2:latest
           ports:
             - name: web
               containerPort: 8080

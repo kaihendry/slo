@@ -1,30 +1,24 @@
-NAME := hendry/sla
+NAME := test
+REGION := ap-southeast-1
+ACCOUNT := 160071257600
 
 VERSION  = $(shell git describe --tags --always --dirty)
-BRANCH   = $(shell git rev-parse --abbrev-ref HEAD)
 
-all: $(VERSION) latest
+all: $(VERSION)
 
-$(VERSION) latest: options amd64 arm
-	docker manifest create --amend $(NAME):$@ $(NAME):amd64 $(NAME):arm
-	docker manifest annotate $(NAME):$@ $(NAME):arm --os linux --arch arm
-	docker manifest inspect $(NAME):$@
-	docker manifest push -p $(NAME):$@
+login:
+	aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 160071257600.dkr.ecr.ap-southeast-1.amazonaws.com
 
-arm amd64:
-	docker build -q -t $(NAME):$@ . \
-		--build-arg TARGET_ARCH=$@ \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg BRANCH=$(BRANCH)
-	docker tag $(NAME):$@ $(NAME):$(VERSION)
+$(VERSION): options
+	docker build -q -t $(NAME):$(VERSION) .
+	docker tag $(NAME):$(VERSION) $(ACCOUNT).dkr.ecr.$(REGION).amazonaws.com/sre/test:$(VERSION)
+	docker push $(ACCOUNT).dkr.ecr.$(REGION).amazonaws.com/$(NAME):$(VERSION)
 
 options:
 	@echo sla build options:
 	@echo "VERSION   = ${VERSION}"
-	@echo "BRANCH    = ${BRANCH}"
 
-run:
-	docker run --rm -p 8080:8080 -p 8081:8081 $(NAME):amd64
+testci:
+	gitlab-runner exec shell build-job
 
-checkmetrics:
-	curl -s localhost:3000/metrics | docker run --entrypoint=promtool prom/prometheus check metrics
+
