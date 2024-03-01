@@ -1,18 +1,16 @@
 package main
 
 import (
-	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"time"
 
-	_ "net/http/pprof"
-
-	"github.com/Pallinder/go-randomdata"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -20,7 +18,6 @@ import (
 
 var (
 	Version   string
-	Branch    string
 	GoVersion = runtime.Version()
 
 	inFlightGauge = promauto.NewGauge(prometheus.GaugeOpts{
@@ -46,67 +43,46 @@ var (
 
 	buildInfo = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "sla_build_info",
-			Help: "A metric with a constant '1' value labeled by attributes from which sla was built.",
+			Name: "slo_build_info",
+			Help: "A metric with a constant '1' value labeled by attributes from which slo was built.",
 		},
-		[]string{"version", "branch", "goversion"},
+		[]string{"version", "goversion"},
 	)
 )
 
 func root(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
-	req := fmt.Sprintf("%s", r.URL.String())
-	log.Println(name, base64.StdEncoding.EncodeToString([]byte(req)))
-	if name == "" {
-		name = randomdata.SillyName()
-	}
-	log.Println(name, req)
 	start := time.Now()
-
-	dep, err := base64.StdEncoding.DecodeString(r.URL.Query().Get("dep"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Fatal(err)
-	}
-
-	if string(dep) != "" {
-		log.Printf("%s fetching dependency: %s", name, string(dep))
-		res, err := http.Get(fmt.Sprintf("http://%s%s", r.Host, string(dep)))
-
-		// OFTEN MISSING
-		statusOK := res.StatusCode >= 200 && res.StatusCode < 300
-		if !statusOK {
-			http.Error(w, "not OK response", res.StatusCode)
-			return
-		}
-		// OFTEN MISSING
-
-		if err != nil {
-			http.Error(w, err.Error(), res.StatusCode)
-			// Prom crashes here
-			return
-		}
-	}
-
 	sleep, err := strconv.Atoi(r.URL.Query().Get("sleep"))
 	if err == nil {
-		// log.Println(fmt.Sprintf("%s sleeping: %d milliseconds", name, sleep))
+		slog.Info("sleeping", "ms", sleep)
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 	}
 	code, err := strconv.Atoi(r.URL.Query().Get("code"))
 	if err == nil {
 		if code >= 200 {
-			log.Println(fmt.Sprintf("Code: %d", code))
+			slog.Warn("overriding status code", "code", code)
 			w.WriteHeader(code)
 		}
 	}
-	log.Printf("name %s dep %s code %d slept %d ms", name, string(dep), code, sleep)
-	t := time.Now()
-	fmt.Fprintln(w, fmt.Sprintf("Name: %s, Elapsed: %s ms, Slept: %d ms, with dep: %s", name, t.Sub(start), sleep, string(dep)))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Version", Version)
+
+	response := map[string]interface{}{
+		"url":     "https://github.com/kaihendry/slo",
+		"elapsed": time.Since(start).Milliseconds(),
+		"slept":   sleep,
+		"version": Version,
+	}
+	json.NewEncoder(w).Encode(response)
+	// write header with version
 }
 
 func main() {
-	buildInfo.WithLabelValues(Version, Branch, GoVersion).Set(1)
+	slog.SetDefault(getLogger(os.Getenv("LOGLEVEL")))
+	Version, _ = GitCommit()
+
+	buildInfo.WithLabelValues(Version, GoVersion).Set(1)
 
 	// duration is partitioned by the HTTP method and handler. It uses custom
 	// buckets based on the expected request duration.
@@ -115,13 +91,6 @@ func main() {
 	// /
 	// sum(rate(request_duration_seconds_count[5m])) by (job)
 
-	// Pprof server.
-	// https://mmcloughlin.com/posts/your-pprof-is-showing
-	// go func() {
-	// 	log.Fatal(http.ListenAndServe(":8081", nil))
-	// }()
-
-	// Application server.
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -133,8 +102,39 @@ func main() {
 
 	mux.Handle("/", rootChain)
 
-	log.Println("Listening on :" + os.Getenv("PORT"))
+	slog.Info("starting slo", "port", os.Getenv("PORT"), "Version", Version, "GoVersion", GoVersion)
+
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), mux); err != nil {
-		log.Fatal(err)
+		slog.Error("error listening", err)
 	}
+}
+
+func getLogger(logLevel string) *slog.Logger {
+	levelVar := slog.LevelVar{}
+
+	if logLevel != "" {
+		if err := levelVar.UnmarshalText([]byte(logLevel)); err != nil {
+			panic(fmt.Sprintf("Invalid log level %s: %v", logLevel, err))
+		}
+	}
+
+	return slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+		Level: levelVar.Level(),
+	}))
+}
+
+func GitCommit() (commit string, dirty bool) {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "", false
+	}
+	for _, setting := range bi.Settings {
+		switch setting.Key {
+		case "vcs.modified":
+			dirty = setting.Value == "true"
+		case "vcs.revision":
+			commit = setting.Value
+		}
+	}
+	return
 }

@@ -2,36 +2,45 @@
 apiVersion: "apps/v1"
 kind: "Deployment"
 metadata:
-  name: "sla"
+  name: "slo"
   namespace: "kai"
   labels:
-    app: "sla"
-
+    app: "slo"
 spec:
   replicas: 10
   selector:
     matchLabels:
-      app: "sla"
+      app: "slo"
   template:
     metadata:
       labels:
-        app: "sla"
+        app: "slo"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
     spec:
       containers:
-        - name: "sla-sha256"
-          image: "hendry/sla:35459a3"
+        - name: slo
+          image: "hendry/slo:latest"
           ports:
             - name: web
+          resources:
+            limits:
+              cpu: "1"
+              memory: "500Mi"
+            requests:
+              cpu: "0.5"
+              memory: "200Mi"
               containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: sla
+  name: slo
   namespace: "kai"
 spec:
   type: LoadBalancer
   ports:
     - port: 8080
   selector:
-    app: sla
+    app: slo
