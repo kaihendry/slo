@@ -74,8 +74,12 @@ func root(w http.ResponseWriter, r *http.Request) {
 		"slept":   sleep,
 		"version": Version,
 	}
-	json.NewEncoder(w).Encode(response)
-	// write header with version
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		slog.Error("error encoding response", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func main() {
