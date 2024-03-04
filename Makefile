@@ -1,8 +1,8 @@
 build:
 	docker build -t hendry/slo:latest .
-	
+
 # publish to https://hub.docker.com/repository/docker/hendry/slo
-push:
+push: build
 	docker push hendry/slo:latest
 
 run:
