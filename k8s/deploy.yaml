@@ -1,46 +1,43 @@
----
-apiVersion: "apps/v1"
-kind: "Deployment"
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: "slo"
-  labels:
-    app: "slo"
+  name: slo-deployment
 spec:
   replicas: 10
   selector:
     matchLabels:
-      app: "slo"
+      app: slo
   template:
     metadata:
       labels:
-        app: "slo"
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
+        app: slo
     spec:
       containers:
         - name: slo
-          image: "hendry/slo:latest"
+          image: hendry/slo:latest
           ports:
-            - name: web
-          resources:
-            limits:
-              cpu: "1"
-              memory: "500Mi"
-            requests:
-              cpu: "0.1"
-              memory: "200Mi"
-          ports:
-            - name: web
-              containerPort: 8080
+            - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: slo
+  name: slo-service
 spec:
-  type: ClusterIP
-  ports:
-    - port: 8080
+  type: NodePort
   selector:
     app: slo
+  ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: slo-monitor
+spec:
+  selector:
+    matchLabels:
+      app: slo
+  endpoints:
+    - port: web
+      path: /metrics
