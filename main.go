@@ -106,9 +106,18 @@ func main() {
 
 	mux.Handle("/", rootChain)
 
-	slog.Info("starting slo", "port", os.Getenv("PORT"), "Version", Version, "GoVersion", GoVersion)
+	port, ok := os.LookupEnv("PORT")
+	if !ok {
+		port = "8080"
+	}
+	if _, err := strconv.Atoi(port); err != nil {
+		slog.Error("invalid port", "port", port)
+		os.Exit(1)
+	}
 
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), mux); err != nil {
+	slog.Info("starting slo", "port", port, "Version", Version, "GoVersion", GoVersion)
+
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		slog.Error("error listening", err)
 	}
 }
