@@ -50,6 +50,13 @@ var (
 	)
 )
 
+func requestLog(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r)
+		slog.Debug("request", "method", r.Method, "url", r.URL.Path)
+	})
+}
+
 func root(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	sleep, err := strconv.Atoi(r.URL.Query().Get("sleep"))
@@ -80,7 +87,6 @@ func root(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	slog.Debug("request", "method", r.Method, "url", r.URL.Path, "elapsed", time.Since(start).Milliseconds())
 }
 
 func main() {
@@ -118,7 +124,7 @@ func main() {
 
 	slog.Info("starting slo", "port", port, "Version", Version, "GoVersion", GoVersion)
 
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, requestLog(mux)); err != nil {
 		slog.Error("error listening", err)
 	}
 }
