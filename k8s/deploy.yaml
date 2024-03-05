@@ -15,6 +15,16 @@ spec:
       containers:
         - name: slo
           image: hendry/slo:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "1"
+            requests:
+              memory: "64Mi"
+              cpu: "0.1"
+          env:
+            - name: LOGLEVEL
+              value: "debug"
           ports:
             - containerPort: 8080
 ---
@@ -23,7 +33,7 @@ kind: Service
 metadata:
   name: slo-service
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: slo
   ports:

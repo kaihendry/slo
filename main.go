@@ -80,6 +80,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	slog.Debug("request", "method", r.Method, "url", r.URL.Path, "elapsed", time.Since(start).Milliseconds())
 }
 
 func main() {
