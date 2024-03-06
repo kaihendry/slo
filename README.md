@@ -22,6 +22,8 @@ With a SLO query in Prometheus:
 
 It should say 50% of requests are under 300ms in the last 5 minutes.
 
+![image](https://github.com/kaihendry/slo/assets/765871/6ebcb036-1da6-4489-ad66-207ae94a7208)
+
 # Other resources
 
 * https://github.com/kaihendry/pingprom
