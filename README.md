@@ -2,6 +2,9 @@
 
 Goal is to show how to derive a Service Level Objective measure on a Kubernetes cluster using Prometheus.
 
+SLOs help teams create API performance goals and measure how well they are
+meeting those goals.
+
 Assuming a fresh start:
 
 1. `brew install colima hey helm` - install the tools
@@ -17,17 +20,21 @@ helm install tutorial prometheus-community/kube-prometheus-stack --set prometheu
 
 4. `kubectl apply -f k8s/deploy.yaml` to deploy the "slo" service
 5. Export prometheus service to localhost: `kubectl port-forward service/tutorial-kube-prometheus-s-prometheus 9090:9090`
-6. Expose slo to localhost: `kubectl port-forward svc/slo-service 8080:8080`
+6. Expose slo level 4 load balancer to localhost: `kubectl port-forward svc/slo-service 8080:8080`
 7. `hey http://localhost:8080/` - generate 200 requests to the service
-8. `hey http://localhost:8080/?sleep=500` - generate 200 SLOW 🐢 requests to the service
+8. `hey "http://localhost:8080/?sleep=500"` - generate 200 SLOW 🐢 requests to the service
 
-With a SLO query in Prometheus:
+With a [Application Performance Index](https://en.wikipedia.org/wiki/Apdex) aka SLO query in Prometheus:
 
     sum(rate(request_duration_seconds_bucket{le="0.3"}[5m])) by (job)
     /
     sum(rate(request_duration_seconds_count[5m])) by (job)
 
-It should say 50% of requests are under 300ms in the last 5 minutes. You might need to be patient for the metrics to appear.
+[More details on these queries])https://prometheus.io/docs/practices/histograms/)
+
+It should say 50% (0.5) of requests are under 300ms in the last 5 minutes. You
+might **need to be patient** for the metrics to appear, as the /metrics
+endpoint might not be scraped yet.
 
 ![image](https://github.com/kaihendry/slo/assets/765871/6ebcb036-1da6-4489-ad66-207ae94a7208)
 
