@@ -6,7 +6,7 @@ Assuming a fresh start:
 
 1. `brew install colima hey helm` - install the tools
 1. Give colima a bit more memory than defaults: `colima start --cpu 4 --memory 8`
-2. Start Kubernetes cluster, e.e. `colima kubernetes start`
+2. Start Kubernetes cluster: `colima kubernetes start`
 3. Install the [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
 
 ```bash
@@ -23,7 +23,7 @@ helm install tutorial prometheus-community/kube-prometheus-stack --set prometheu
 
 With a SLO query in Prometheus:
 
-    sum(rate(request_duration_seconds_bucket{le="0.3"}[5m])) by (job) 
+    sum(rate(request_duration_seconds_bucket{le="0.3"}[5m])) by (job)
     /
     sum(rate(request_duration_seconds_count[5m])) by (job)
 

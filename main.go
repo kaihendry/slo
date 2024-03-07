@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kaihendry/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -22,7 +23,7 @@ var (
 
 	inFlightGauge = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "in_flight_requests",
-		Help: "A guage of requests currently being served by the wrapped handler",
+		Help: "A gauge of requests currently being served by the wrapped handler",
 	})
 
 	counter = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -49,13 +50,6 @@ var (
 		[]string{"version", "goversion"},
 	)
 )
-
-func requestLog(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTP(w, r)
-		slog.Debug("request", "method", r.Method, "url", r.URL.Path)
-	})
-}
 
 func root(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
@@ -95,13 +89,6 @@ func main() {
 
 	buildInfo.WithLabelValues(Version, GoVersion).Set(1)
 
-	// duration is partitioned by the HTTP method and handler. It uses custom
-	// buckets based on the expected request duration.
-	// https://prometheus.io/docs/practices/histograms/
-	// sum(rate(request_duration_seconds_bucket{le="0.3"}[5m])) by (job)
-	// /
-	// sum(rate(request_duration_seconds_count[5m])) by (job)
-
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -124,7 +111,7 @@ func main() {
 
 	slog.Info("starting slo", "port", port, "Version", Version, "GoVersion", GoVersion)
 
-	if err := http.ListenAndServe(":"+port, requestLog(mux)); err != nil {
+	if err := http.ListenAndServe(":"+port, middleware.LogStatus(mux)); err != nil {
 		slog.Error("error listening", err)
 	}
 }
