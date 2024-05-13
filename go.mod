@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	github.com/kaihendry/middleware v0.0.0-20240307100714-ea73b5f11d04
-	github.com/prometheus/client_golang v1.19.0
+	github.com/prometheus/client_golang v1.19.1
 )
 
 require (
