@@ -77,7 +77,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		slog.Error("error encoding response", err)
+		slog.Error("error encoding response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -105,14 +105,14 @@ func main() {
 		port = "8080"
 	}
 	if _, err := strconv.Atoi(port); err != nil {
-		slog.Error("invalid port", "port", port)
+		slog.Error("invalid port", "port", port, "error", err)
 		os.Exit(1)
 	}
 
 	slog.Info("starting slo", "port", port, "Version", Version, "GoVersion", GoVersion)
 
 	if err := http.ListenAndServe(":"+port, middleware.LogStatus(mux)); err != nil {
-		slog.Error("error listening", err)
+		slog.Error("error listening", "error", err)
 	}
 }
 
